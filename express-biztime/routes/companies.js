@@ -20,9 +20,13 @@ router.get('/:code', async function (req, res, next) {
         const { code } = req.params;
         const results = await Promise.all([
             db.query(`
-            SELECT * 
-            FROM companies 
-            WHERE code=$1`, [code]),
+            SELECT c.name, c.description, i.industry 
+            FROM companies AS c
+            LEFT JOIN companies_industries AS ci
+            ON c.code = ci.company_code
+            LEFT JOIN industries AS i
+            ON ci.industry_code = i.code
+            WHERE c.code=$1`, [code]),
             db.query(`
             SELECT *
             FROM invoices
@@ -30,7 +34,14 @@ router.get('/:code', async function (req, res, next) {
         if (results[0].rows.length === 0) {
             throw new ExpressError(`cannot find company with code ${code}`, 404);
         }
-        const company = results[0].rows[0];
+        const { name, description } = results[0].rows[0];
+        const company = { code, name, description };
+        if (results[0].rows[0].industry) {
+            company.industries = results[0].rows.map(r => r.industry);
+        }
+        else{
+            company.industries = [];
+        }
         company.invoices = results[1].rows;
         return res.json({ company: company });
     }
@@ -41,7 +52,7 @@ router.get('/:code', async function (req, res, next) {
 
 router.post('/', async function (req, res, next) {
     try {
-        const {name, description } = req.body;
+        const { name, description } = req.body;
         if (!name || !description) {
             throw new ExpressError("request missing required field code name or description", 400);
         }
@@ -49,7 +60,7 @@ router.post('/', async function (req, res, next) {
         INSERT INTO companies (code, name, description)
         VALUES($1, $2, $3)
         RETURNING code, name, description
-        `, [slugify(name, {lower: true}), name, description]);
+        `, [slugify(name, { lower: true }), name, description]);
 
         return res.status(201).json({ company: result.rows[0] });
     }
