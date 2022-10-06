@@ -3,12 +3,14 @@
 
 const express = require("express");
 const companiesRouter = require("./routes/companies");
+const invoicesRouter = require("./routes/invoices");
 const app = express();
 const ExpressError = require("./expressError")
 
 app.use(express.json());
 
 app.use('/companies', companiesRouter);
+app.use('/invoices', invoicesRouter);
 
 /** 404 handler */
 
