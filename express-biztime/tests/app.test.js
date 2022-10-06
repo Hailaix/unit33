@@ -3,6 +3,7 @@ process.env.NODE_ENV = "test";
 
 // npm packages
 const request = require("supertest");
+const slugify = require("slugify");
 
 // app imports
 const app = require("../app");
@@ -83,12 +84,12 @@ describe("GET /invoices/:id", function () {
 describe("POST /companies", function () {
     test("create a company", async function () {
         const newComp = {
-            code: "test2",
             name: "Second test Company",
             description: "This is the second test company"
         }
         const res = await request(app).post(`/companies`).send(newComp);
         expect(res.statusCode).toBe(201);
+        newComp.code = slugify(newComp.name, { lower: true });
         expect(res.body.company).toEqual(newComp);
     });
 
@@ -137,10 +138,11 @@ describe("PUT /companies/:code", function () {
     });
 });
 
-describe("PUT /invoices/:id", function(){
-    test("edit an invoice", async function(){
+describe("PUT /invoices/:id", function () {
+    test("edit an invoice", async function () {
         const res = await request(app).put(`/invoices/${inv.id}`).send({
-            amt: 1
+            amt: 1,
+            paid: true
         });
         expect(res.statusCode).toBe(200);
         expect(res.body.invoice.amt).toEqual(1);
@@ -148,7 +150,8 @@ describe("PUT /invoices/:id", function(){
 
     test("404 response on invalid id", async function () {
         const res = await request(app).put(`/invoices/0`).send({
-            amt: 1
+            amt: 1,
+            paid: true
         });
         expect(res.statusCode).toBe(404);
     });
@@ -159,27 +162,27 @@ describe("PUT /invoices/:id", function(){
     });
 });
 
-describe("DELETE /companies/:code", function(){
-    test("delete a company", async function(){
+describe("DELETE /companies/:code", function () {
+    test("delete a company", async function () {
         const res = await request(app).delete(`/companies/${comp.code}`);
         expect(res.statusCode).toBe(200);
-        expect(res.body).toEqual({status: "deleted"});
+        expect(res.body).toEqual({ status: "deleted" });
     });
 
-    test("404 response on invalid code", async function(){
+    test("404 response on invalid code", async function () {
         const res = await request(app).delete(`/companies/0`);
         expect(res.statusCode).toBe(404);
     });
 });
 
-describe("DELETE /invoices/:code", function(){
-    test("delete an invoice", async function(){
+describe("DELETE /invoices/:code", function () {
+    test("delete an invoice", async function () {
         const res = await request(app).delete(`/invoices/${inv.id}`);
         expect(res.statusCode).toBe(200);
-        expect(res.body).toEqual({status: "deleted"});
+        expect(res.body).toEqual({ status: "deleted" });
     });
 
-    test("404 response on invalid code", async function(){
+    test("404 response on invalid code", async function () {
         const res = await request(app).delete(`/invoices/0`);
         expect(res.statusCode).toBe(404);
     });

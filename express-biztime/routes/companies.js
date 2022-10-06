@@ -1,5 +1,6 @@
 const express = require("express");
 const ExpressError = require("../expressError");
+const slugify = require("slugify");
 const db = require("../db");
 
 const router = new express.Router();
@@ -40,15 +41,15 @@ router.get('/:code', async function (req, res, next) {
 
 router.post('/', async function (req, res, next) {
     try {
-        const { code, name, description } = req.body;
-        if (!code || !name || !description) {
+        const {name, description } = req.body;
+        if (!name || !description) {
             throw new ExpressError("request missing required field code name or description", 400);
         }
         const result = await db.query(`
         INSERT INTO companies (code, name, description)
         VALUES($1, $2, $3)
         RETURNING code, name, description
-        `, [code, name, description]);
+        `, [slugify(name, {lower: true}), name, description]);
 
         return res.status(201).json({ company: result.rows[0] });
     }
