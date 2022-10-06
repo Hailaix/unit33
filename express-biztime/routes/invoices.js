@@ -25,7 +25,15 @@ router.get('/:id', async function (req, res, next) {
         if (result.rows.length === 0) {
             throw new ExpressError(`cannot find invoice with id ${id}`, 404);
         }
-        return res.json({ invoice: result.rows[0] });
+        const invoice = result.rows[0];
+        const compRes = await db.query(`
+        SELECT *
+        FROM companies
+        WHERE code=$1
+        `, [invoice.comp_code]);
+        delete invoice.comp_code;
+        invoice.company = compRes.rows[0];
+        return res.json({ invoice: invoice });
     }
     catch (e) {
         return next(e);

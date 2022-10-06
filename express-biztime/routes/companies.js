@@ -17,14 +17,21 @@ router.get('/', async function (req, res, next) {
 router.get('/:code', async function (req, res, next) {
     try {
         const { code } = req.params;
-        const result = await db.query(`
-        SELECT * 
-        FROM companies 
-        WHERE code=$1`, [code]);
-        if (result.rows.length === 0) {
+        const results = await Promise.all([
+            db.query(`
+            SELECT * 
+            FROM companies 
+            WHERE code=$1`, [code]),
+            db.query(`
+            SELECT *
+            FROM invoices
+            WHERE comp_code=$1`, [code])]);
+        if (results[0].rows.length === 0) {
             throw new ExpressError(`cannot find company with code ${code}`, 404);
         }
-        return res.json({ company: result.rows[0] });
+        const company = results[0].rows[0];
+        company.invoices = results[1].rows;
+        return res.json({ company: company });
     }
     catch (e) {
         return next(e);
@@ -86,7 +93,7 @@ router.delete('/:code', async function (req, res, next) {
         if (result.rows.length === 0) {
             throw new ExpressError(`cannot find company with code ${code}`, 404);
         }
-        
+
         return res.json({ status: "deleted" });
     }
     catch (e) {
